@@ -7,9 +7,9 @@ use crate::lifecycle::{
     require_active_campaign, require_not_paused, transition, CampaignState,
 };
 use crate::storage::{
-    bump_instance_ttl, decrement_active_campaign_count, get_revenue_pool,
-    get_total_raised_global, increment_cancelled_campaign_count, remove_voting_state, set_campaign,
-    set_revenue_pool, set_total_raised_global,
+    bump_instance_ttl, decrement_active_campaign_count, get_revenue_pool, get_total_raised_global,
+    increment_cancelled_campaign_count, remove_voting_state, set_campaign, set_revenue_pool,
+    set_total_raised_global,
 };
 
 pub(crate) fn cancel_campaign(env: &Env, campaign_id: u32) -> Result<(), Error> {
@@ -56,7 +56,9 @@ pub(crate) fn cancel_campaign(env: &Env, campaign_id: u32) -> Result<(), Error> 
         let total = get_total_raised_global(env);
         set_total_raised_global(
             env,
-            total.checked_sub(campaign.amount_raised).ok_or(Error::Overflow)?,
+            total
+                .checked_sub(campaign.amount_raised)
+                .ok_or(Error::Overflow)?,
         );
     }
 
@@ -128,9 +130,18 @@ pub(crate) fn admin_cancel_campaign(
         let total = get_total_raised_global(env);
         set_total_raised_global(
             env,
-            total.checked_sub(campaign.amount_raised).ok_or(Error::Overflow)?,
+            total
+                .checked_sub(campaign.amount_raised)
+                .ok_or(Error::Overflow)?,
         );
     }
+
+    // #861: Read the revenue-pool balance so the event can report it.
+    // Unlike creator self-cancel, admin cancel deliberately does NOT
+    // refund the pool to the (presumed fraudulent) creator — the balance
+    // stays locked in the contract. Indexers need this figure to
+    // calculate outstanding liabilities.
+    let revenue_pool = get_revenue_pool(env, campaign_id);
 
     campaign.is_cancelled = true;
     campaign.is_active = false;
@@ -140,9 +151,17 @@ pub(crate) fn admin_cancel_campaign(
     decrement_active_campaign_count(env);
     increment_cancelled_campaign_count(env);
 
+    // #861: Expanded payload now includes effective_amount_raised and
+    // revenue_pool so indexers can calculate outstanding refund
+    // liabilities without a follow-up contract read.
     env.events().publish(
         ("campaign_admin_cancelled", campaign_id, admin),
-        (campaign.creator.clone(), reason),
+        (
+            campaign.creator.clone(),
+            reason,
+            campaign.effective_amount_raised,
+            revenue_pool,
+        ),
     );
 
     Ok(())

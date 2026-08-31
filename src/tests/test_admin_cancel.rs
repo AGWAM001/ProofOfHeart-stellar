@@ -107,6 +107,45 @@ fn test_admin_cancel_campaign_rejects_empty_and_oversized_reason() {
 }
 
 #[test]
+fn test_admin_cancel_campaign_emits_revenue_pool_in_event() {
+    let (env, admin, creator, contributor1, _, _token, token_admin, client) = setup_env();
+    let goal = 1000i128;
+    token_admin.mint(&contributor1, &2000);
+    token_admin.mint(&creator, &5000);
+
+    let campaign_id = make_campaign(&env, &client, &creator, goal);
+    client.verify_campaign(&campaign_id);
+    client.contribute(&campaign_id, &contributor1, &800);
+
+    // Simulate revenue deposit: set funds_withdrawn, deposit, then restore.
+    env.as_contract(&client.address, || {
+        let mut campaign = crate::storage::get_campaign(&env, campaign_id).unwrap();
+        campaign.funds_withdrawn = true;
+        crate::storage::set_campaign(&env, campaign_id, &campaign);
+    });
+    client.deposit_revenue(&campaign_id, &3000);
+    env.as_contract(&client.address, || {
+        let mut campaign = crate::storage::get_campaign(&env, campaign_id).unwrap();
+        campaign.funds_withdrawn = false;
+        crate::storage::set_campaign(&env, campaign_id, &campaign);
+    });
+
+    assert_eq!(client.get_revenue_pool(&campaign_id), 3000);
+
+    let reason = String::from_str(&env, "fraud with revenue");
+    client.admin_cancel_campaign(&admin, &campaign_id, &reason);
+
+    let events = env.events().all();
+    let last_event = events.last().unwrap();
+    let payload: (Address, String, i128, i128) =
+        soroban_sdk::FromVal::from_val(&env, &last_event.2);
+    assert_eq!(payload.0, creator);
+    assert_eq!(payload.1, reason);
+    assert_eq!(payload.2, 800); // effective_amount_raised
+    assert_eq!(payload.3, 3000); // orphaned revenue pool
+}
+
+#[test]
 fn test_admin_cancel_campaign_rejected_while_paused() {
     let (env, admin, creator, _, _, _, _, client) = setup_env();
     let campaign_id = make_campaign(&env, &client, &creator, 1000);
@@ -137,16 +176,26 @@ fn test_admin_cancel_campaign_allows_contributor_refund() {
 
 #[test]
 fn test_admin_cancel_campaign_emits_event_with_reason() {
-    let (env, admin, creator, _, _, _, _, client) = setup_env();
-    let campaign_id = make_campaign(&env, &client, &creator, 1000);
+    let (env, admin, creator, contributor1, _, _token, token_admin, client) = setup_env();
+    let goal = 1000i128;
+    token_admin.mint(&contributor1, &goal);
+
+    let campaign_id = make_campaign(&env, &client, &creator, goal);
     client.verify_campaign(&campaign_id);
+    client.contribute(&campaign_id, &contributor1, &600);
 
     let reason = String::from_str(&env, "confirmed fraudulent activity");
     client.admin_cancel_campaign(&admin, &campaign_id, &reason);
 
     let events = env.events().all();
     let last_event = events.last().unwrap();
-    let payload: (Address, String) = soroban_sdk::FromVal::from_val(&env, &last_event.2);
+    let payload: (Address, String, i128, i128) =
+        soroban_sdk::FromVal::from_val(&env, &last_event.2);
     assert_eq!(payload.0, creator);
     assert_eq!(payload.1, reason);
+    // effective_amount_raised equals amount_raised (600) since no refunds
+    // have been claimed yet.
+    assert_eq!(payload.2, 600);
+    // No revenue was deposited, so pool should be zero.
+    assert_eq!(payload.3, 0);
 }
