@@ -103,3 +103,25 @@ pub(crate) fn setup_contract<'a>(
     client.init(admin, token_address, &300);
     client
 }
+
+/// Creates a campaign with a unique title derived from `n`, avoiding
+/// the per-creator title uniqueness constraint (#801).
+pub(crate) fn create_campaign_with_n(
+    env: &Env,
+    client: &ProofOfHeartClient<'_>,
+    creator: &Address,
+    n: u32,
+) -> u32 {
+    extern crate std;
+    client.create_campaign(&make_params(
+        creator.clone(),
+        String::from_str(env, &std::format!("Campaign {n}")),
+        String::from_str(env, &std::format!("Desc {n}")),
+        1000 + n as i128,
+        30,
+        Category::Learner,
+        false,
+        0,
+        0i128,
+    ))
+}
