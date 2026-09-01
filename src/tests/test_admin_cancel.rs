@@ -121,17 +121,11 @@ fn test_admin_cancel_campaign_emits_revenue_pool_in_event() {
     client.verify_campaign(&campaign_id);
     client.contribute(&campaign_id, &contributor1, &800);
 
-    // Simulate revenue deposit: set funds_withdrawn, deposit, then restore.
+    // Simulate revenue deposit directly via storage: deposit_revenue requires
+    // has_revenue_sharing=true and funds_withdrawn=true, which would cause a
+    // non-unwinding panic (SIGABRT) if we called the contract method.
     env.as_contract(&client.address, || {
-        let mut campaign = crate::storage::get_campaign(&env, campaign_id).unwrap();
-        campaign.funds_withdrawn = true;
-        crate::storage::set_campaign(&env, campaign_id, &campaign);
-    });
-    client.deposit_revenue(&campaign_id, &3000);
-    env.as_contract(&client.address, || {
-        let mut campaign = crate::storage::get_campaign(&env, campaign_id).unwrap();
-        campaign.funds_withdrawn = false;
-        crate::storage::set_campaign(&env, campaign_id, &campaign);
+        crate::storage::set_revenue_pool(&env, campaign_id, 3000);
     });
 
     assert_eq!(client.get_revenue_pool(&campaign_id), 3000);
