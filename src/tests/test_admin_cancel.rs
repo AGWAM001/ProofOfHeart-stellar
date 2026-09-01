@@ -9,11 +9,12 @@ fn make_campaign(
     client: &ProofOfHeartClient,
     creator: &Address,
     goal: i128,
+    index: u32,
 ) -> u32 {
     client.create_campaign(&CreateCampaignParams {
         creator: creator.clone(),
-        title: String::from_str(env, "Fraud Suspect"),
-        description: String::from_str(env, "Reported for fraud"),
+        title: String::from_str(env, &format!("Fraud Suspect {index}")),
+        description: String::from_str(env, &format!("Reported for fraud {index}")),
         funding_goal: goal,
         duration_days: 30,
         category: Category::Educator,
@@ -26,7 +27,7 @@ fn make_campaign(
 #[test]
 fn test_admin_cancel_campaign_rejects_non_admin() {
     let (env, _admin, creator, _, _, _, _, client) = setup_env();
-    let campaign_id = make_campaign(&env, &client, &creator, 1000);
+    let campaign_id = make_campaign(&env, &client, &creator, 1000, 0);
     client.verify_campaign(&campaign_id);
 
     let impostor = Address::generate(&env);
@@ -41,7 +42,7 @@ fn test_admin_cancel_campaign_succeeds_after_goal_met() {
     let goal = 1000i128;
     token_admin.mint(&contributor1, &goal);
 
-    let campaign_id = make_campaign(&env, &client, &creator, goal);
+    let campaign_id = make_campaign(&env, &client, &creator, goal, 0);
     client.verify_campaign(&campaign_id);
     client.contribute(&campaign_id, &contributor1, &goal);
 
@@ -61,7 +62,7 @@ fn test_admin_cancel_campaign_succeeds_after_goal_met() {
 #[test]
 fn test_admin_cancel_campaign_succeeds_on_unverified_campaign() {
     let (env, admin, creator, _, _, _, _, client) = setup_env();
-    let campaign_id = make_campaign(&env, &client, &creator, 1000);
+    let campaign_id = make_campaign(&env, &client, &creator, 1000, 0);
 
     client.admin_cancel_campaign(&admin, &campaign_id, &String::from_str(&env, "fraud"));
     let campaign = client.get_campaign(&campaign_id);
@@ -75,7 +76,7 @@ fn test_admin_cancel_campaign_rejected_after_withdrawal() {
     let goal = 500i128;
     token_admin.mint(&contributor1, &goal);
 
-    let campaign_id = make_campaign(&env, &client, &creator, goal);
+    let campaign_id = make_campaign(&env, &client, &creator, goal, 0);
     client.verify_campaign(&campaign_id);
     client.contribute(&campaign_id, &contributor1, &goal);
     client.withdraw_funds(&campaign_id);
@@ -91,7 +92,7 @@ fn test_admin_cancel_campaign_rejected_after_withdrawal() {
 fn test_admin_cancel_campaign_rejects_empty_and_oversized_reason() {
     extern crate std;
     let (env, admin, creator, _, _, _, _, client) = setup_env();
-    let campaign_id = make_campaign(&env, &client, &creator, 1000);
+    let campaign_id = make_campaign(&env, &client, &creator, 1000, 0);
     client.verify_campaign(&campaign_id);
 
     let empty = client.try_admin_cancel_campaign(&admin, &campaign_id, &String::from_str(&env, ""));
@@ -113,7 +114,7 @@ fn test_admin_cancel_campaign_emits_revenue_pool_in_event() {
     token_admin.mint(&contributor1, &2000);
     token_admin.mint(&creator, &5000);
 
-    let campaign_id = make_campaign(&env, &client, &creator, goal);
+    let campaign_id = make_campaign(&env, &client, &creator, goal, 0);
     client.verify_campaign(&campaign_id);
     client.contribute(&campaign_id, &contributor1, &800);
 
@@ -148,7 +149,7 @@ fn test_admin_cancel_campaign_emits_revenue_pool_in_event() {
 #[test]
 fn test_admin_cancel_campaign_rejected_while_paused() {
     let (env, admin, creator, _, _, _, _, client) = setup_env();
-    let campaign_id = make_campaign(&env, &client, &creator, 1000);
+    let campaign_id = make_campaign(&env, &client, &creator, 1000, 0);
     client.verify_campaign(&campaign_id);
     client.pause();
 
@@ -163,7 +164,7 @@ fn test_admin_cancel_campaign_allows_contributor_refund() {
     let goal = 1000i128;
     token_admin.mint(&contributor1, &2000);
 
-    let campaign_id = make_campaign(&env, &client, &creator, goal);
+    let campaign_id = make_campaign(&env, &client, &creator, goal, 0);
     client.verify_campaign(&campaign_id);
     client.contribute(&campaign_id, &contributor1, &600);
 
@@ -180,7 +181,7 @@ fn test_admin_cancel_campaign_emits_event_with_reason() {
     let goal = 1000i128;
     token_admin.mint(&contributor1, &goal);
 
-    let campaign_id = make_campaign(&env, &client, &creator, goal);
+    let campaign_id = make_campaign(&env, &client, &creator, goal, 0);
     client.verify_campaign(&campaign_id);
     client.contribute(&campaign_id, &contributor1, &600);
 

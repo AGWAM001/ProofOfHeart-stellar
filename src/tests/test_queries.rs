@@ -9,8 +9,8 @@ fn test_list_campaigns_exclusive_cursor_semantics() {
     for i in 0..3 {
         let id = client.create_campaign(&make_params(
             creator.clone(),
-            String::from_str(&env, "Campaign"),
-            String::from_str(&env, "Desc"),
+            String::from_str(&env, &format!("Campaign {i}")),
+            String::from_str(&env, &format!("Desc {i}")),
             1000 + i as i128,
             30,
             Category::Learner,
@@ -35,11 +35,11 @@ fn test_list_campaigns_exclusive_cursor_semantics() {
 fn test_list_active_campaigns_exclusive_cursor_semantics() {
     let (env, _admin, creator, _c1, _c2, _token, _token_admin, client) = setup_env();
 
-    for _ in 0..4 {
+    for i in 0..4 {
         let _ = client.create_campaign(&make_params(
             creator.clone(),
-            String::from_str(&env, "Campaign"),
-            String::from_str(&env, "Desc"),
+            String::from_str(&env, &format!("Campaign {i}")),
+            String::from_str(&env, &format!("Desc {i}")),
             1000,
             30,
             Category::Learner,
@@ -486,8 +486,8 @@ fn list_campaigns_boundary_cases() {
     for idx in 0..3 {
         let id = client.create_campaign(&make_params(
             creator.clone(),
-            String::from_str(&env, "Campaign"),
-            String::from_str(&env, "Pagination test"),
+            String::from_str(&env, &format!("Campaign {idx}")),
+            String::from_str(&env, &format!("Pagination test {idx}")),
             1_000 + idx as i128,
             30,
             Category::Learner,
@@ -521,8 +521,8 @@ fn list_active_campaigns_boundary_cases_and_sparse_results() {
     for idx in 0..5 {
         let _ = client.create_campaign(&make_params(
             creator.clone(),
-            String::from_str(&env, "Campaign"),
-            String::from_str(&env, "Pagination test"),
+            String::from_str(&env, &format!("Campaign {idx}")),
+            String::from_str(&env, &format!("Pagination test {idx}")),
             1_000 + idx as i128,
             30,
             Category::Learner,
@@ -640,11 +640,11 @@ fn test_get_creator_campaigns_jumps_to_bucket_containing_start() {
 fn test_list_campaigns_and_list_active_campaigns_boundary_agreement() {
     let (env, _admin, creator, _c1, _c2, _token, _token_admin, client) = setup_env();
 
-    for _ in 0..5 {
+    for i in 0..5 {
         client.create_campaign(&make_params(
             creator.clone(),
-            String::from_str(&env, "Campaign"),
-            String::from_str(&env, "Desc"),
+            String::from_str(&env, &format!("Campaign {i}")),
+            String::from_str(&env, &format!("Desc {i}")),
             1000,
             30,
             Category::Learner,
