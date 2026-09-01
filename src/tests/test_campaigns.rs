@@ -1,3 +1,6 @@
+extern crate alloc;
+use alloc::format;
+
 use proptest::prelude::*;
 
 use super::helpers::*;

@@ -24,6 +24,9 @@
 //! test host escalates a failed `require_auth` to a non-unwinding panic that
 //! aborts the test binary rather than returning an error or unwinding.
 
+extern crate alloc;
+use alloc::format;
+
 use soroban_sdk::{Address, Env, Vec};
 
 use crate::errors::Error;

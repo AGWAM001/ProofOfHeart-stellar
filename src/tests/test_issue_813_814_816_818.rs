@@ -5,6 +5,9 @@
 /// #813 — extend_campaign_deadline respects the per-category duration cap.
 /// #814 — BlockCampaignContributionCount (per-campaign) is the only block
 ///         count variant; no dead global key exists.
+extern crate alloc;
+use alloc::format;
+
 use super::helpers::*;
 use crate::{Category, CreateCampaignParams};
 use soroban_sdk::{vec, Address, String};
@@ -51,7 +54,7 @@ fn test_cancel_campaign_decrements_total_raised_global_immediately() {
 
 #[test]
 fn test_cancel_campaign_allows_accept_token_update_after_all_refunds_claimed() {
-    let (env, admin, creator, contributor, _, _token, token_admin, client) = setup_env();
+    let (env, _admin, creator, contributor, _, _token, token_admin, client) = setup_env();
     token_admin.mint(&contributor, &500);
 
     let id = make_campaign(&env, &client, &creator, 1_000, 30, Category::Educator, 0);
