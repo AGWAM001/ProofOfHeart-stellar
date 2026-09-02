@@ -12,10 +12,12 @@ pub const CATEGORY_CAMPAIGNS_BUCKET_SIZE: u32 = 500;
 macro_rules! persistent_set {
     ($env:expr, $key:expr, $value:expr) => {{
         let key = $key;
-        $env.storage().persistent().set(&key, $value);
-        $env.storage()
-            .persistent()
-            .extend_ttl(&key, BUMP_THRESHOLD, BUMP_AMOUNT);
+        let storage = $env.storage().persistent();
+        if storage.has(&key) {
+            storage.extend_ttl(&key, BUMP_THRESHOLD, BUMP_AMOUNT);
+        }
+        storage.set(&key, $value);
+        storage.extend_ttl(&key, BUMP_THRESHOLD, BUMP_AMOUNT);
     }};
 }
 
@@ -279,7 +281,9 @@ pub enum BookmarkKey {
 /// rather than aborting the entire transaction.
 pub fn get_campaign(env: &Env, campaign_id: u32) -> Option<Campaign> {
     let key = CampaignKey::Campaign(campaign_id);
-    let raw: Val = env.storage().persistent().get(&key)?;
+    let storage = env.storage().persistent();
+    let raw: Val = storage.get(&key)?;
+    storage.extend_ttl(&key, BUMP_THRESHOLD, BUMP_AMOUNT);
     Campaign::try_from_val(env, &raw).ok()
 }
 
@@ -630,7 +634,13 @@ pub fn set_contributor_revenue_claimants(env: &Env, campaign_id: u32, count: u32
 /// Returns the number of approval votes for a campaign.
 pub fn get_approve_votes(env: &Env, campaign_id: u32) -> u32 {
     let key = VotingKey::ApproveVotes(campaign_id);
-    env.storage().persistent().get(&key).unwrap_or(0)
+    let value: Option<u32> = env.storage().persistent().get(&key);
+    if value.is_some() {
+        env.storage()
+            .persistent()
+            .extend_ttl(&key, BUMP_THRESHOLD, BUMP_AMOUNT);
+    }
+    value.unwrap_or(0)
 }
 
 /// Stores the approval vote count for a campaign and extends its TTL.
@@ -641,7 +651,13 @@ pub fn set_approve_votes(env: &Env, campaign_id: u32, count: u32) {
 /// Returns the number of rejection votes for a campaign.
 pub fn get_reject_votes(env: &Env, campaign_id: u32) -> u32 {
     let key = VotingKey::RejectVotes(campaign_id);
-    env.storage().persistent().get(&key).unwrap_or(0)
+    let value: Option<u32> = env.storage().persistent().get(&key);
+    if value.is_some() {
+        env.storage()
+            .persistent()
+            .extend_ttl(&key, BUMP_THRESHOLD, BUMP_AMOUNT);
+    }
+    value.unwrap_or(0)
 }
 
 /// Stores the rejection vote count for a campaign and extends its TTL.
@@ -654,7 +670,13 @@ pub fn set_reject_votes(env: &Env, campaign_id: u32, count: u32) {
 /// Returns the total approval token-weight for a campaign.
 pub fn get_approve_weight(env: &Env, campaign_id: u32) -> i128 {
     let key = VotingKey::ApproveWeight(campaign_id);
-    env.storage().persistent().get(&key).unwrap_or(0)
+    let value: Option<i128> = env.storage().persistent().get(&key);
+    if value.is_some() {
+        env.storage()
+            .persistent()
+            .extend_ttl(&key, BUMP_THRESHOLD, BUMP_AMOUNT);
+    }
+    value.unwrap_or(0)
 }
 
 /// Stores the total approval token-weight for a campaign and extends its TTL.
@@ -665,7 +687,13 @@ pub fn set_approve_weight(env: &Env, campaign_id: u32, weight: i128) {
 /// Returns the total rejection token-weight for a campaign.
 pub fn get_reject_weight(env: &Env, campaign_id: u32) -> i128 {
     let key = VotingKey::RejectWeight(campaign_id);
-    env.storage().persistent().get(&key).unwrap_or(0)
+    let value: Option<i128> = env.storage().persistent().get(&key);
+    if value.is_some() {
+        env.storage()
+            .persistent()
+            .extend_ttl(&key, BUMP_THRESHOLD, BUMP_AMOUNT);
+    }
+    value.unwrap_or(0)
 }
 
 /// Stores the total rejection token-weight for a campaign and extends its TTL.
