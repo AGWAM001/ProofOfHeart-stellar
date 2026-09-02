@@ -898,17 +898,41 @@ pub fn set_total_raised_global(env: &Env, amount: i128) {
 pub const CREATOR_CAMPAIGNS_BUCKET_SIZE: u32 = 500;
 
 /// Returns the total number of campaigns owned by a creator.
+///
+/// Returns `0` both when the creator is unknown and when the creator is known
+/// but has no current campaigns. Use [`creator_exists`] to distinguish these
+/// cases.
 pub fn get_creator_campaign_count(env: &Env, creator: &Address) -> u32 {
+    get_creator_campaign_count_opt(env, creator).unwrap_or(0)
+}
+
+/// Returns the total number of campaigns owned by a creator as an `Option`.
+///
+/// `None` means the address has never been recorded as a creator; `Some(0)`
+/// means the creator is known but currently has no campaigns.
+pub fn get_creator_campaign_count_opt(env: &Env, creator: &Address) -> Option<u32> {
     let key = CampaignKey::CreatorCampaignCount(creator.clone());
     let val: Option<u32> = env.storage().persistent().get(&key);
     if let Some(count) = val {
         env.storage()
             .persistent()
             .extend_ttl(&key, BUMP_THRESHOLD, BUMP_AMOUNT);
-        count
+        Some(count)
     } else {
-        0
+        None
     }
+}
+
+/// Returns `true` if `creator` has ever been recorded as a campaign creator.
+///
+/// This is the existence indicator for the creator index: it checks for the
+/// `CreatorCampaignCount` key rather than defaulting a missing key to zero, so
+/// consumers can tell an unknown address from a known creator with no active
+/// campaigns.
+pub fn creator_exists(env: &Env, creator: &Address) -> bool {
+    env.storage()
+        .persistent()
+        .has(&CampaignKey::CreatorCampaignCount(creator.clone()))
 }
 
 /// Stores the total number of campaigns owned by a creator.
