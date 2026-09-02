@@ -151,7 +151,7 @@ fn test_anomaly_auto_pause_burst() {
     // Now make 10 small contributions on the same campaign. Each contributes
     // 10 tokens; after10 calls the block_count reaches 10.
     for _ in 0..10 {
-        client.contribute(&campaign_id, &contributor1, &10);
+        client.contribute(&campaign_id, &contributor1, &100);
     }
     assert_eq!(client.get_contribution(&campaign_id, &contributor1), 1_200);
 
