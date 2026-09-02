@@ -116,6 +116,7 @@ fn test_failed_funding_claim_refund_still_decrements_total_raised_global() {
     // Advance past the deadline without reaching the goal.
     env.ledger().with_mut(|l| {
         l.timestamp += 31 * 24 * 60 * 60 + 1;
+        l.timestamp = l.timestamp + 31 * 24 * 60 * 60 + 1;
     });
 
     client.claim_refund(&id, &contributor);

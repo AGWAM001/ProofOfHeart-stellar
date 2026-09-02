@@ -118,6 +118,18 @@ fn test_admin_cancel_campaign_emits_revenue_pool_in_event() {
     token_admin.mint(&creator, &5000);
 
     let campaign_id = make_campaign(&env, &client, &creator, goal, 0);
+    // Create campaign with revenue sharing enabled (required for deposit_revenue).
+    let campaign_id = client.create_campaign(&CreateCampaignParams {
+        creator: creator.clone(),
+        title: String::from_str(&env, "Revenue Campaign"),
+        description: String::from_str(&env, "Has revenue"),
+        funding_goal: goal,
+        duration_days: 30,
+        category: Category::EducationalStartup,
+        has_revenue_sharing: true,
+        revenue_share_percentage: 2000,
+        max_contribution_per_user: 0i128,
+    });
     client.verify_campaign(&campaign_id);
     client.contribute(&campaign_id, &contributor1, &800);
 
