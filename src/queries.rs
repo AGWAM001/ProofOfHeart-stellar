@@ -54,7 +54,7 @@ pub(crate) fn list_campaigns(env: &Env, start: u32, limit: u32) -> soroban_sdk::
     let capped_limit = limit.min(crate::LIST_MAX_LIMIT);
     let end = start.saturating_add(capped_limit).min(total_count);
 
-    for id in (start + 1)..=end {
+    for id in (start.saturating_add(1))..=end {
         if let Some(campaign) = get_campaign(env, id) {
             campaigns.push_back(campaign);
         }
