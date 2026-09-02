@@ -1,3 +1,6 @@
+extern crate alloc;
+use alloc::format;
+
 use proptest::prelude::*;
 
 use super::helpers::*;
@@ -147,11 +150,13 @@ fn test_admin_verify_campaign_duplicate_attempt() {
 fn test_description_length_boundaries() {
     extern crate std;
     let (env, _admin, creator, _, _, _, _, client) = setup_env();
-    let title = String::from_str(&env, "Title");
+    let title0 = String::from_str(&env, "Title 0");
+    let title1 = String::from_str(&env, "Title 1");
+    let title2 = String::from_str(&env, "Title 2");
 
     let res = client.try_create_campaign(&make_params(
         creator.clone(),
-        title.clone(),
+        title0,
         String::from_str(&env, ""),
         1000,
         30,
@@ -165,7 +170,7 @@ fn test_description_length_boundaries() {
     assert!(client
         .try_create_campaign(&make_params(
             creator.clone(),
-            title.clone(),
+            title1,
             String::from_str(&env, "a"),
             1000,
             30,
@@ -180,7 +185,7 @@ fn test_description_length_boundaries() {
     assert!(client
         .try_create_campaign(&make_params(
             creator.clone(),
-            title.clone(),
+            title2,
             String::from_str(&env, &desc_1000),
             1000,
             30,
@@ -192,9 +197,10 @@ fn test_description_length_boundaries() {
         .is_ok());
 
     let desc_1001 = "a".repeat(1001);
+    let title3 = String::from_str(&env, "Title 3");
     let res = client.try_create_campaign(&make_params(
         creator.clone(),
-        title.clone(),
+        title3,
         String::from_str(&env, &desc_1001),
         1000,
         30,
@@ -331,8 +337,8 @@ fn test_campaign_count_cannot_reset_after_deployment() {
     for i in 1u32..=3 {
         let id = client.create_campaign(&make_params(
             creator.clone(),
-            String::from_str(&env, titles[(i - 1) as usize]),
-            String::from_str(&env, "Desc"),
+            String::from_str(&env, &format!("Campaign {i}")),
+            String::from_str(&env, &format!("Desc {i}")),
             1000,
             30,
             Category::Educator,
