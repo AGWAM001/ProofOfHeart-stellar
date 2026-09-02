@@ -196,7 +196,7 @@ fn test_get_campaigns_by_category_small_limit_respected() {
         client.create_campaign(&make_campaign_params_simple(&env, &creator, i));
     }
     let result = client.get_campaigns_by_category(&Category::Learner, &0u32, &5u32);
-    assert_eq!(result.len(), 5);
+    assert_eq!(result.0.len(), 5);
 }
 
 // ── #348 resume_campaign spurious events/state writes ─────────────────────────

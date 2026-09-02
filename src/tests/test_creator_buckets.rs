@@ -28,7 +28,7 @@ fn all_creator_ids(
     let mut ids = soroban_sdk::Vec::new(env);
     let mut start = 0u32;
     loop {
-        let page = client.get_creator_campaigns(creator, &start, &LIST_MAX_LIMIT);
+        let (page, cursor) = client.get_creator_campaigns(creator, &start, &LIST_MAX_LIMIT);
         let len = page.len();
         if len == 0 {
             break;
@@ -36,7 +36,7 @@ fn all_creator_ids(
         for i in 0..len {
             ids.push_back(page.get(i).unwrap().id);
         }
-        start += len;
+        start = cursor;
         if len < LIST_MAX_LIMIT {
             break;
         }
@@ -81,13 +81,13 @@ fn test_creator_buckets_pagination_boundaries() {
     assert_eq!(last_page.get(0).unwrap().id, 16);
     assert_eq!(last_page.get(4).unwrap().id, 20);
 
-    let empty = client.get_creator_campaigns(&creator, &total, &10);
+    let (empty, _cursor) = client.get_creator_campaigns(&creator, &total, &10);
     assert_eq!(empty.len(), 0);
 
-    let empty2 = client.get_creator_campaigns(&creator, &(total + 10), &10);
+    let (empty2, _cursor) = client.get_creator_campaigns(&creator, &(total + 10), &10);
     assert_eq!(empty2.len(), 0);
 
-    let zero = client.get_creator_campaigns(&creator, &0, &0);
+    let (zero, _cursor) = client.get_creator_campaigns(&creator, &0, &0);
     assert_eq!(zero.len(), 0);
 }
 
